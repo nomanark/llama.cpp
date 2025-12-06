@@ -1,0 +1,46 @@
+
+name: Cross-compile llama.cpp for ARMv7-A
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-armv7a:
+    runs-on: ubuntu-latest
+
+    env:
+      TOOLCHAIN_PREFIX: arm-linux-gnueabihf
+      TARGET_ARCH: armv7-a
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install cross-compiler toolchain
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf cmake make
+
+    - name: Create build directory
+      run: mkdir -p build-armv7a
+
+    - name: Configure CMake for ARMv7-A
+      working-directory: build-armv7a
+      run: |
+        cmake .. \
+          -DCMAKE_SYSTEM_NAME=Linux \
+          -DCMAKE_SYSTEM_PROCESSOR=arm \
+          -DCMAKE_C_COMPILER=${TOOLCHAIN_PREFIX}-gcc \
+          -DCMAKE_CXX_COMPILER=${TOOLCHAIN_PREFIX}-g++ \
+          -DCMAKE_C_FLAGS="-march=armv7-a" \
+          -DCMAKE_CXX_FLAGS="-march=armv7-a"
+
+    - name: Build
+      working-directory: build-armv7a
+      run: make -j$(nproc)
+
+    - name: Archive ARMv7-A binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: llama.cpp-armv7a
+        path: build-armv7a/bin/*
