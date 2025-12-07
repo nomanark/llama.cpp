@@ -31,7 +31,6 @@ jobs:
           zlib1g-dev \
           pkg-config \
           # ADD THIS: Ensures the correct linker/binutils are present
-          binutils-${{ env.TARGET_TRIPLE }}
     
     - name: Generate Clang CMake Toolchain File
       run: |
