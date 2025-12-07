@@ -15,18 +15,24 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install cross-compiler toolchain
+    - name: Install cross-compiler toolchain and ARM dependencies
       run: |
+        # 1. Enable the armhf architecture
         sudo dpkg --add-architecture armhf
         sudo apt-get update
+        
+        # 2. Install cross-compilers and the ARM (armhf) versions of development libraries
         sudo apt-get install -y \
           gcc-arm-linux-gnueabihf \
           g++-arm-linux-gnueabihf \
+          # Explicitly install the ARM versions of CURL and its SSL dependency
           libcurl4-openssl-dev:armhf \
+          libssl-dev:armhf \
           cmake \
           make \
           libc6-dev-armhf-cross \
           pkg-config
+    
     # This step creates the "Future Proof" toolchain file automatically
     - name: Generate CMake Toolchain File
       run: |
@@ -37,6 +43,7 @@ jobs:
         set(CMAKE_C_COMPILER /usr/bin/arm-linux-gnueabihf-gcc)
         set(CMAKE_CXX_COMPILER /usr/bin/arm-linux-gnueabihf-g++)
         # target environment on the build host system
+        # CRITICAL: Include the multi-arch library path so CMake can find libcurl and libssl
         set(CMAKE_FIND_ROOT_PATH /usr/arm-linux-gnueabihf /usr/lib/arm-linux-gnueabihf)
         # modify default behavior of FIND_XXX() commands
         set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
