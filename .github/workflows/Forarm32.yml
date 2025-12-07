@@ -18,7 +18,7 @@ jobs:
     - name: Install cross-compiler toolchain and dependencies
       run: |
         sudo apt-get update
-        # Install dependencies using the working package list
+        # Ensure the cross-library packages are installed
         sudo apt-get install -y \
           gcc-arm-linux-gnueabihf \
           g++-arm-linux-gnueabihf \
@@ -30,28 +30,43 @@ jobs:
           zlib1g-dev \
           pkg-config
 
-    - name: Generate CMake Toolchain File (Critical Fix)
+    - name: Generate CMake Toolchain File (Final System Root Fix)
       run: |
+        # Define the system root for the ARM toolchain
+        ARM_SYSROOT=/usr/arm-linux-gnueabihf
+        
         cat <<EOF > arm-toolchain.cmake
         set(CMAKE_SYSTEM_NAME Linux)
         set(CMAKE_SYSTEM_PROCESSOR arm)
-        # Set compilers using full paths
+        
+        # Set compilers and add the CRITICAL --sysroot flag
         set(CMAKE_C_COMPILER /usr/bin/arm-linux-gnueabihf-gcc)
         set(CMAKE_CXX_COMPILER /usr/bin/arm-linux-gnueabihf-g++)
         
-        # Set the root path for finding libraries and headers
-        # This tells CMake to ONLY look in the ARM-specific directories
+        # CRITICAL FIX: Manually inject the --sysroot path into the compiler
+        set(CMAKE_C_COMPILER_WORKS TRUE)
+        set(CMAKE_CXX_COMPILER_WORKS TRUE)
+        set(CMAKE_C_FLAGS "-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -funsafe-math-optimizations --sysroot=\${ARM_SYSROOT}")
+        set(CMAKE_CXX_FLAGS "-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -funsafe-math-optimizations --sysroot=\${ARM_SYSROOT}")
+        
+        # CMAKE_FIND_ROOT_PATH for finding shared libraries (libcurl, libssl)
         set(CMAKE_FIND_ROOT_PATH /usr/arm-linux-gnueabihf /usr/lib/arm-linux-gnueabihf /usr)
         
-        # Critical: Force CMake to ONLY search within CMAKE_FIND_ROOT_PATH
+        # Force CMake to ONLY search within CMAKE_FIND_ROOT_PATH
         set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
         set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-        
-        # Compiler flags from your working configuration
-        set(CMAKE_C_FLAGS "-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -funsafe-math-optimizations")
-        set(CMAKE_CXX_FLAGS "-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -funsafe-math-optimizations")
         EOF
+    
+    - name: Cache build
+      uses: actions/cache@v4
+      with:
+        path: |
+          build-armv7a
+          ~/.cache
+        key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
 
     - name: Create build directory
       run: mkdir -p build-armv7a
