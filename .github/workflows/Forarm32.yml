@@ -15,53 +15,44 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install cross-compiler toolchain and ARM dependencies
+    - name: Install cross-compiler toolchain and dependencies
       run: |
-        # 1. Enable the armhf architecture
-        sudo dpkg --add-architecture armhf
         sudo apt-get update
-        
-        # 2. Install cross-compilers and the ARM (armhf) versions of development libraries
+        # Install dependencies using the working package list
         sudo apt-get install -y \
           gcc-arm-linux-gnueabihf \
           g++-arm-linux-gnueabihf \
-          # Explicitly install the ARM versions of CURL and its SSL dependency
-          libcurl4-openssl-dev:armhf \
-          libssl-dev:armhf \
           cmake \
           make \
           libc6-dev-armhf-cross \
+          libcurl4-gnutls-dev \
+          libssl-dev \
+          zlib1g-dev \
           pkg-config
-    
-    # This step creates the "Future Proof" toolchain file automatically
-    - name: Generate CMake Toolchain File
+
+    - name: Generate CMake Toolchain File (Critical Fix)
       run: |
         cat <<EOF > arm-toolchain.cmake
         set(CMAKE_SYSTEM_NAME Linux)
         set(CMAKE_SYSTEM_PROCESSOR arm)
-        # Force full paths to compilers to fix "not a full path" error
+        # Set compilers using full paths
         set(CMAKE_C_COMPILER /usr/bin/arm-linux-gnueabihf-gcc)
         set(CMAKE_CXX_COMPILER /usr/bin/arm-linux-gnueabihf-g++)
-        # target environment on the build host system
-        # CRITICAL: Include the multi-arch library path so CMake can find libcurl and libssl
-        set(CMAKE_FIND_ROOT_PATH /usr/arm-linux-gnueabihf /usr/lib/arm-linux-gnueabihf)
-        # modify default behavior of FIND_XXX() commands
+        
+        # Set the root path for finding libraries and headers
+        # This tells CMake to ONLY look in the ARM-specific directories
+        set(CMAKE_FIND_ROOT_PATH /usr/arm-linux-gnueabihf /usr/lib/arm-linux-gnueabihf /usr)
+        
+        # Critical: Force CMake to ONLY search within CMAKE_FIND_ROOT_PATH
         set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
         set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-        # Compiler flags
+        
+        # Compiler flags from your working configuration
         set(CMAKE_C_FLAGS "-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -funsafe-math-optimizations")
         set(CMAKE_CXX_FLAGS "-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -funsafe-math-optimizations")
         EOF
-    - name: Cache build
-      uses: actions/cache@v4
-      with:
-        path: |
-          build-armv7a
-          ~/.cache
-        key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-build-
+
     - name: Create build directory
       run: mkdir -p build-armv7a
 
@@ -71,6 +62,7 @@ jobs:
         cmake .. \
           -DCMAKE_TOOLCHAIN_FILE=../arm-toolchain.cmake \
           -DCMAKE_BUILD_TYPE=Release
+          
     - name: Build
       working-directory: build-armv7a
       run: make -j$(nproc)
@@ -79,5 +71,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: llama.cpp-armv7a
-        # Adjust this path if llama.cpp puts binaries in a different subfolder
         path: build-armv7a/bin/*
