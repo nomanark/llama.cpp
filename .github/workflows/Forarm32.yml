@@ -48,7 +48,7 @@ jobs:
         set(CMAKE_SYSROOT ${{ env.TARGET_SYSROOT }})
 
         # 4. Set the search mode strictly to target files
-        set(CMAKE_FIND_ROOT_PATH ${{ env.TARGET_SYSROOT }})
+        set(CMAKE_FIND_ROOT_PATH ${{ env.TARGET_SYSROOT }} /usr/lib/${{ env.TARGET_TRIPLE }})
         set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
         set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
