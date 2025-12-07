@@ -19,7 +19,11 @@ jobs:
     - name: Install cross-compiler toolchain
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf cmake make
+        sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf cmake make \
+        libcurl4-gnutls-dev \
+        libssl-dev \
+        zlib1g-dev \
+        pkg-config
 
     - name: Create build directory
       run: mkdir -p build-armv7a
