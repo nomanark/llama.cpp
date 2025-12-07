@@ -17,7 +17,7 @@ jobs:
 
     - name: Install Clang cross-compiler and dependencies
       run: |
-        # 1. Install Clang/LLVM toolchain
+        # Ensure TARGET_TRIPLE is arm-linux-gnueabihf
         sudo apt-get update
         sudo apt-get install -y \
           clang \
@@ -25,12 +25,14 @@ jobs:
           gcc-${{ env.TARGET_TRIPLE }} \
           cmake \
           make \
-          libc6-dev-armhf-cross \
+          libc6-dev-armhf-cross \  # <--- Essential C libs
           libcurl4-gnutls-dev \
           libssl-dev \
           zlib1g-dev \
-          pkg-config
-
+          pkg-config \
+          # ADD THIS: Ensures the correct linker/binutils are present
+          binutils-${{ env.TARGET_TRIPLE }}
+    
     - name: Generate Clang CMake Toolchain File
       run: |
         cat <<EOF > arm-clang-toolchain.cmake
@@ -41,10 +43,9 @@ jobs:
         set(CMAKE_C_COMPILER clang)
         set(CMAKE_CXX_COMPILER clang++)
         
-        # 2. CRITICAL: Set the target triple for Clang
+        # 2. Set the target triple and sysroot for Clang
         set(CMAKE_C_COMPILER_TARGET ${{ env.TARGET_TRIPLE }})
         set(CMAKE_CXX_COMPILER_TARGET ${{ env.TARGET_TRIPLE }})
-        
         set(CMAKE_SYSROOT ${{ env.TARGET_SYSROOT }})
 
         # 4. Set the search mode strictly to target files
@@ -53,9 +54,10 @@ jobs:
         set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
         
-        # 5. Compiler flags
-        set(CMAKE_C_FLAGS "-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -funsafe-math-optimizations")
-        set(CMAKE_CXX_FLAGS "-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -funsafe-math-optimizations")
+        # 5. Compiler flags (FIX: Added -B linker path)
+        set(COMMON_FLAGS "-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -funsafe-math-optimizations -B/usr/${{ env.TARGET_TRIPLE }}/usr/lib/")
+        set(CMAKE_C_FLAGS "\${COMMON_FLAGS}")
+        set(CMAKE_CXX_FLAGS "\${COMMON_FLAGS}")
         EOF
     
     - name: Cache build
