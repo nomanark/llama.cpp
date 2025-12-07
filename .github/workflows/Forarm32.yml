@@ -20,7 +20,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf cmake make \
-        libcurl4-gnutls-dev \
+        libc6-dev-armhf-cross ccache libcurl4-gnutls-dev \
         libssl-dev \
         zlib1g-dev \
         pkg-config
@@ -38,7 +38,11 @@ jobs:
           -DCMAKE_CXX_COMPILER=${TOOLCHAIN_PREFIX}-g++ \
           -DCMAKE_C_FLAGS="-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -funsafe-math-optimizations" \
           -DCMAKE_CXX_FLAGS="-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -funsafe-math-optimizations" \
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_FIND_ROOT_PATH=${ARM_SYSROOT_PATH} \
+          -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+          -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+          -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY
 
     - name: Build
       working-directory: build-armv7a
