@@ -32,8 +32,9 @@ jobs:
           -DCMAKE_SYSTEM_PROCESSOR=arm \
           -DCMAKE_C_COMPILER=${TOOLCHAIN_PREFIX}-gcc \
           -DCMAKE_CXX_COMPILER=${TOOLCHAIN_PREFIX}-g++ \
-          -DCMAKE_C_FLAGS="-march=armv7-a" \
-          -DCMAKE_CXX_FLAGS="-march=armv7-a"
+          -DCMAKE_C_FLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=hard" \
+          -DCMAKE_CXX_FLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=hard" \
+          -DCMAKE_BUILD_TYPE=Release
 
     - name: Build
       working-directory: build-armv7a
