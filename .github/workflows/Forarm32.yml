@@ -21,9 +21,19 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf cmake make \
         libc6-dev-armhf-cross ccache libcurl4-gnutls-dev \
-        libssl-dev \
+        gcc-multilib g++-multilib build-essential libssl-dev \
         zlib1g-dev \
         pkg-config
+
+    - name: Cache build
+      uses: actions/cache@v4
+      with:
+        path: |
+          build
+            ~/.cache
+        key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
 
     - name: Create build directory
       run: mkdir -p build-armv7a
