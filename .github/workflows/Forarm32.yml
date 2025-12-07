@@ -9,7 +9,7 @@ jobs:
 
     env:
       TARGET_TRIPLE: arm-linux-gnueabihf
-      TARGET_SYSROOT: /usr/${{ env.TARGET_TRIPLE }}
+      TARGET_SYSROOT: /usr/arm-linux-gnueabihf
 
     steps:
     - name: Checkout repository
